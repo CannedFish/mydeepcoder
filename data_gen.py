@@ -1,17 +1,22 @@
 # -*- coding: utf-8 -*-
 
-import sys
+import sys, pickle
 
 from dsl import FUNCs, Lambdas
 
 PROGRAM = []
+DEBUG = True
 
 def save(f_path):
     """
     Save data to a file
     """
+    global DEBUG
     with open(f_path, 'w+') as f:
-        f.writelines(map(lambda x: str(x)[1:-1]+'\n', PROGRAM))
+        if DEBUG:
+            f.writelines(map(lambda x: str(x)[1:-1]+'\n', PROGRAM))
+        else:
+            f.writelines(pickle.dumps(PROGRAM))
     print "Generated programs has been saved at %s" % f_path
 
 def search_next(cur, program, fo_remain, ho_remain, target_len):
@@ -30,16 +35,19 @@ def search_next(cur, program, fo_remain, ho_remain, target_len):
                 and FUNCs['HO'][x][1][1] == cur[2], ho_remain)
         for func in valid_fo_funcs:
             search_next(FUNCs['FO'][func], \
-                    program+[func], \
+                    program+[(func,)], \
                     filter(lambda x: x!=func, valid_fo_funcs), \
                     valid_ho_funcs, \
                     target_len)
         for func in valid_ho_funcs:
-            search_next(FUNCs['HO'][func], \
-                    program+[func], \
-                    valid_fo_funcs, \
-                    filter(lambda x: x!=func, valid_ho_funcs), \
-                    target_len)
+            for lambs in filter(lambda x: Lambdas[x][3]\
+                    ==FUNCs['HO'][func][1][0], \
+                    [l for l in Lambdas]):
+                search_next(FUNCs['HO'][func], \
+                        program+[(func, lambs)], \
+                        valid_fo_funcs, \
+                        filter(lambda x: x!=func, valid_ho_funcs), \
+                        target_len)
 
 def main(length, f_path):
     print "Generating programs whose length is %d" % length
@@ -47,13 +55,13 @@ def main(length, f_path):
     ho_funcs = [func for func in FUNCs['HO']]
     for func in fo_funcs:
         search_next(FUNCs['FO'][func], \
-                [func], \
+                [(func,)], \
                 filter(lambda x: x!=func, fo_funcs), \
                 ho_funcs, \
                 length)
     for func in ho_funcs:
         search_next(FUNCs['HO'][func], \
-                [func], \
+                [(func,)], \
                 fo_funcs, \
                 filter(lambda x: x!=func, ho_funcs), \
                 length)
@@ -61,11 +69,18 @@ def main(length, f_path):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "Usage: python data_gen.py $Length[ $File]\n" +\
+        print "Usage: python data_gen.py $Length[ $File $DEBUG]\n" +\
                 "Param $Length: the length of programe\n" +\
-                "Param $File: the path of file to save"
+                "Param $File: the path of file to save" +\
+                "Param $DEBUG: True or False\n" +\
         sys.exit(1)
 
-    f_path = './generated_data.dat' if len(sys.argv)<3 else sys.argv[2]
+    f_path = './generated_data.dat' \
+            if len(sys.argv)<3 or sys.argv[2]=='-' \
+            else sys.argv[2]
+    global DEBUG
+    DEBUG = True \
+            if len(sys.argv)<4 or sys.argv[3]=='-' else \
+            sys.argv[3]=='True'
     main(int(sys.argv[1]), f_path)
 
