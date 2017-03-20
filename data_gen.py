@@ -4,8 +4,8 @@ import sys, pickle
 
 from dsl import FUNCs, Lambdas
 
-PROGRAM = []
-DEBUG = True
+PROGRAMs = []
+# DEBUG = True
 
 def save(f_path):
     """
@@ -14,14 +14,14 @@ def save(f_path):
     global DEBUG
     with open(f_path, 'w+') as f:
         if DEBUG:
-            f.writelines(map(lambda x: str(x)[1:-1]+'\n', PROGRAM))
+            f.writelines(map(lambda x: str(x)[1:-1]+'\n', PROGRAMs))
         else:
-            f.writelines(pickle.dumps(PROGRAM))
+            f.writelines(pickle.dumps(PROGRAMs))
     print "Generated programs has been saved at %s" % f_path
 
 def search_next(cur, program, fo_remain, ho_remain, target_len):
     if len(program) == target_len:
-        PROGRAM.append(program)
+        PROGRAMs.append(program)
         print program
         return
     else:

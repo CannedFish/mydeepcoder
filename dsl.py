@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import random
+
 def SCANL1(f, v):
     if len(v) > 0:
         y = [v[0]] * len(v)
@@ -52,12 +54,89 @@ Lambdas = {
     '(/4)': [lambda x: x/4, (0,), 0, 3],
     '(>0)': [lambda x: x>0, (0,), 0, 3],
     '(<0)': [lambda x: x<0, (0,), 0, 3],
-    '(%2==0)': [lambda x: x%2==0, (0,), 0, 3],
-    '(%2==1)': [lambda x: x%2==1, (0,), 0, 3],
+    '(%2==0)': [lambda x: x%2==0, (0,), 2, 3],
+    '(%2==1)': [lambda x: x%2==1, (0,), 2, 3],
     '(+)': [lambda x, y: x+y, (0, 0), 0, 4],
     '(-)': [lambda x, y: x-y, (0, 0), 0, 4],
     '(*)': [lambda x, y: x*y, (0, 0), 0, 4],
     'MIN': [lambda x, y: x if x<y else y, (0, 0), 0, 4],
     'MAX': [lambda x, y: x if x>y else y, (0, 0), 0, 4],
+}
+
+def _gen_ordered_list(min_=None, max_=None, length=None):
+    l = length if length-1 is not None \
+            else random.randint(5, 10)
+    if min_ is not None and max_ is None:
+        start = min_
+        end = start + l
+    elif max_ is not None and min_ is None:
+        end = max_
+        start = end - l
+    elif max_ is not None and min_ is not None:
+        start = min_
+        end = max_
+    else:
+        start = random.randint(-10, 10)
+        end = start + l
+    return range(start, end+1)
+
+def _gen_list():
+    length = random.randint(5, 10)
+    return [random.randint(-10, 10) for i in xrange(length)]
+
+def ReHEAD(n, gcd=1, ordered=False):
+    gen_list = _gen_ordered_list(min_=n/gcd) \
+            if ordered else _gen_list()
+    if gcd != 1:
+        gen_list = map(lambda x: x*gcd, gen_list)
+    gen_list[0] = n
+    return gen_list
+
+def ReLAST(n, gcd=1, ordered=False):
+    gen_list = _gen_ordered_list(max_=n/gcd) \
+            if ordered else _gen_list()
+    if gcd != 1:
+        gen_list = map(lambda x: x*gcd, gen_list)
+    gen_list[-1] = n
+    return gen_list
+
+def ReTAKE(v, gcd=1, ordered=False):
+    gen_list = _gen_ordered_list(min_=v[-1]/gcd) \
+            if ordered else _gen_list()
+    if gcd != 1:
+        gen_list = map(lambda x: x*gcd, gen_list)
+    return len(v), v + gen_list[1:]
+
+def ReDROP(v, gcd=1, ordered=False):
+    gen_list = _gen_ordered_list(max_=v[0]/gcd) \
+            if ordered else _gen_list()
+    if gcd != 1:
+        gen_list = map(lambda x: x*gcd, gen_list)
+    return len(gen_list)-1, gen_list[:-1] + v
+
+def ReACCESS(n, gcd=1, ordered=False):
+    if ordered:
+        gen_list1 = _gen_ordered_list(max_=n/gcd, \
+                length=random.randint(2, 5))
+        gen_list2 = _gen_ordered_list(min_=n/gcd, \
+                length=random.randint(2, 5))
+        idx, gen_list = len(gen_list1)-1, gen_list1+gen_list2[1:]
+    else:
+        gen_list = _gen_list()
+        idx = random.randint(0, len(gen_list)-1)
+    if gcd != 1:
+        gen_list = map(lambda x: x*gcd, gen_list)
+    gen_list[idx] = n
+    return idx, gen_list
+
+ReFUNCs = {
+    'FO': {
+        'HEAD': ReHEAD,
+        'LAST': ReLAST,
+        'TAKE': ReTAKE,
+        'DROP': ReDROP,
+        'ACCESS': ReACCESS
+    },
+    'HO': {}
 }
 
