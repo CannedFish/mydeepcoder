@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import random
+import random, math
 
 def SCANL1(f, v):
     if len(v) > 0:
@@ -52,8 +52,8 @@ Lambdas = {
     '(/3)': [lambda x: x/3, (0,), 0, 3],
     '(*4)': [lambda x: x*4, (0,), 0, 3],
     '(/4)': [lambda x: x/4, (0,), 0, 3],
-    '(>0)': [lambda x: x>0, (0,), 0, 3],
-    '(<0)': [lambda x: x<0, (0,), 0, 3],
+    '(>0)': [lambda x: x>0, (0,), 2, 3],
+    '(<0)': [lambda x: x<0, (0,), 2, 3],
     '(%2==0)': [lambda x: x%2==0, (0,), 2, 3],
     '(%2==1)': [lambda x: x%2==1, (0,), 2, 3],
     '(+)': [lambda x, y: x+y, (0, 0), 0, 4],
@@ -64,7 +64,7 @@ Lambdas = {
 }
 
 def _gen_ordered_list(min_=None, max_=None, length=None):
-    l = length if length-1 is not None \
+    l = length-1 if length is not None \
             else random.randint(5, 10)
     if min_ is not None and max_ is None:
         start = min_
@@ -80,9 +80,28 @@ def _gen_ordered_list(min_=None, max_=None, length=None):
         end = start + l
     return range(start, end+1)
 
-def _gen_list():
+def _gen_list(min_=None, max_=None):
+    if min_ is not None and max_ is None:
+        low_end = min_
+        high_end = min_ + 20
+    elif min_ is None and max_ is not None:
+        high_end = max_
+        low_end = max_ - 20
+    elif min_ is not None and max_ is not None:
+        if min_ >= max_:
+            raise ValueError('max_ must bigger than min_')
+        low_end = min_
+        high_end = max_
+    else:
+        low_end = -10
+        high_end = 10
+
     length = random.randint(5, 10)
-    return [random.randint(-10, 10) for i in xrange(length)]
+    gen_list = [random.randint(low_end-1, high_end-1) \
+            for i in xrange(length)]
+    gen_list[random.randint(0, len(gen_list)-1)] = low_end \
+            if min_ is not None else high_end
+    return gen_list
 
 def ReHEAD(n, gcd=1, ordered=False):
     gen_list = _gen_ordered_list(min_=n/gcd) \
@@ -129,14 +148,138 @@ def ReACCESS(n, gcd=1, ordered=False):
     gen_list[idx] = n
     return idx, gen_list
 
+def ReMINIMUM(n, gcd=1, ordered=False):
+    gen_list = _gen_ordered_list(min_=n/gcd) \
+            if ordered else _gen_list(min_=n/gcd)
+    if gcd != 1:
+        gen_list = map(lambda x: x*gcd, gen_list)
+    return gen_list
+
+def ReMAXIMUM(n, gcd=1, ordered=False):
+    gen_list = _gen_ordered_list(max_=n/gcd) \
+            if ordered else _gen_list(max_=n/gcd)
+    if gcd != 1:
+        gen_list = map(lambda x: x*gcd, gen_list)
+    return gen_list
+
+def ReSORT(v):
+    random.shuffle(v)
+    return v
+
+def ReSUM(n, gcd=1, ordered=False):
+    gen_list = []
+    n /= gcd
+    negative = False
+    if n < 0:
+        n = -n
+        negative = True
+    for i in xrange(n):
+        if i <= n:
+            gen_list.append(i)
+            n -= i
+        else:
+            break
+    gen_list.append(n)
+    if negative:
+        gen_list = map(lambda x: -x, gen_list)
+    for i in xrange(2):
+        x = random.randint(-10, 10)
+        gen_list.extend([x, -x])
+    if gcd != 1:
+        gen_list = map(lambda x: x*gcd, gen_list)
+    if ordered:
+        gen_list = sorted(gen_list)
+    else:
+        random.shuffle(gen_list)
+    return gen_list
+
+def ReFilter_p():
+    pass
+
+def ReFilter_n():
+    pass
+
+def ReFilter_even():
+    pass
+
+def ReFilter_odd():
+    pass
+
 ReFUNCs = {
     'FO': {
         'HEAD': ReHEAD,
         'LAST': ReLAST,
         'TAKE': ReTAKE,
         'DROP': ReDROP,
-        'ACCESS': ReACCESS
+        'ACCESS': ReACCESS,
+        'MINIMUM': ReMINIMUM,
+        'MAXIMUM': ReMAXIMUM,
+        'REVERSE': lambda v: list(reversed(v)),
+        'SORT': ReSORT,
+        'SUM': ReSUM
     },
-    'HO': {}
+    'HO': {
+        'FILTER_(>0)': ReFilter_p,
+        'FILTER_(<0)': ReFilter_n,
+        'FILTER_(%2==0)': ReFilter_even,
+        'FILTER_(%2==1)': ReFilter_odd,
+    }
+}
+
+def ReLambda_add(n, gcd=1):
+    n /= gcd
+    a = random.randint(n-20, n)
+    b = n - a
+    if gcd > 1:
+        a *= gcd
+        b *= gcd
+    return a, b
+
+def ReLambda_del(n, gcd=1):
+    n /= gcd
+    a = random.randint(-10, 10)
+    b = n + a
+    if gcd > 1:
+        a *= gcd
+        b *= gcd
+    return b, a
+
+def ReLambda_mul(n, gcd=1):
+    n /= gcd
+    while True:
+        a = random.randint(1, 10)
+        if n%a == 0:
+            break
+    b = n / a
+    if gcd > 1:
+        b *= gcd
+    return a, b
+
+def ReLambda_min(n, gcd=1):
+    return (n + random.randint(0, 5)) * gcd, n
+
+def ReLambda_max(n, gcd=1):
+    return (n - random.randint(0, 5)) * gcd, n
+
+ReLambdas = {
+    '(+1)': lambda x: x-1,
+    '(-1)': lambda x: x+1,
+    '(*2)': lambda x: x/2,
+    '(/2)': lambda x: x*2,
+    '(*(-1))': lambda x: x*(-1),
+    '(**2)': lambda x: int(math.sqrt(x)),
+    '(*3)': lambda x: x/3,
+    '(/3)': lambda x: x*3,
+    '(*4)': lambda x: x/4,
+    '(/4)': lambda x: x*4,
+    # '(>0)': [lambda x: x>0, (0,), 2, 3],
+    # '(<0)': [lambda x: x<0, (0,), 2, 3],
+    # '(%2==0)': [lambda x: x%2==0, (0,), 2, 3],
+    # '(%2==1)': [lambda x: x%2==1, (0,), 2, 3],
+    '(+)': ReLambda_add,
+    '(-)': ReLambda_del,
+    '(*)': ReLambda_mul,
+    'MIN': ReLambda_min,
+    'MAX': ReLambda_max,
 }
 
