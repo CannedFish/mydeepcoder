@@ -1,5 +1,6 @@
 # -*- coding=utf-8 -*-
 
+import random
 from dsl import FUNCs, Lambdas, ReFUNCs, ReLambdas
 
 vector = [4, -10, 3, 7, -9, 2, -1, -2]
@@ -96,6 +97,69 @@ def lambmax_test():
     for i in [-1, 0, 2]:
         print "%d, %s" % (i, ReLambdas['MAX'](i, gcd=2))
 
+def filter_p_test():
+    v = range(2, 10, 2)
+    print "%s, %s" % (v, ReFUNCs['HO']['FILTER_(>0)'](v))
+    v = range(2, 10, 2)
+    print "%s, %s" % (v, ReFUNCs['HO']['FILTER_(>0)'](v, gcd=2, ordered=True))
+
+def filter_n_test():
+    v = range(-20, -10, 2)
+    print "%s, %s" % (v, ReFUNCs['HO']['FILTER_(<0)'](v))
+    v = range(-20, -10, 2)
+    print "%s, %s" % (v, ReFUNCs['HO']['FILTER_(<0)'](v, gcd=2, ordered=True))
+
+def filter_e_test():
+    v = range(2, 10, 2)
+    print "%s, %s" % (v, ReFUNCs['HO']['FILTER_(%2==0)'](v))
+    v = range(2, 10, 2)
+    print "%s, %s" % (v, ReFUNCs['HO']['FILTER_(%2==0)'](v, ordered=True))
+
+def filter_o_test():
+    v = range(1, 11, 2)
+    print "%s, %s" % (v, ReFUNCs['HO']['FILTER_(%2==1)'](v))
+    v = range(1, 11, 2)
+    print "%s, %s" % (v, ReFUNCs['HO']['FILTER_(%2==1)'](v, gcd=2, ordered=True))
+
+def map_test():
+    v = range(10)
+    print "%s%s, %s" % (ReFUNCs['HO']['MAP']('(-1)', v), '(-1)', v)
+    print "%s%s, %s" % (ReFUNCs['HO']['MAP']('(+1)', v), '(+1)', v)
+    print "%s%s, %s" % (ReFUNCs['HO']['MAP']('(/2)', v), '(/2)', v)
+    print "%s%s, %s" % (ReFUNCs['HO']['MAP']('(*(-1))', v), '(*(-1))', v)
+    v = [1, 4, 9, 16]
+    print "%s%s, %s" % (ReFUNCs['HO']['MAP']('(**2)', v), '(**2)', v)
+
+def count_test():
+    n = 5
+    print "%d, %s, %s" % (n, '(>0)', ReFUNCs['HO']['COUNT']('(>0)', n))
+    print "%d, %s, %s" % (n, '(<0)', ReFUNCs['HO']['COUNT']('(<0)', n))
+    print "%d, %s, %s" % (n, '(%2==0)', ReFUNCs['HO']['COUNT']('(%2==0)', n))
+    print "%d, %s, %s" % (n, '(%2==1)', ReFUNCs['HO']['COUNT']('(%2==1)', n, gcd=3, ordered=True))
+
+def zipwith_test():
+    res = range(10, 20)
+    ret = ReFUNCs['HO']['ZIPWITH']('(+)', res)
+    print "%s%s%s=%s" % (ret[0], '(+)', ret[1], res)
+    ret = ReFUNCs['HO']['ZIPWITH']('(-)', res, gcd = 2)
+    print "%s%s%s=%s" % (ret[0], '(-)', ret[1], res)
+    ret = ReFUNCs['HO']['ZIPWITH']('(*)', res)
+    print "%s%s%s=%s" % (ret[0], '(*)', ret[1], res)
+    ret = ReFUNCs['HO']['ZIPWITH']('MIN', res)
+    print "%s%s%s=%s" % (ret[0], 'MIN', ret[1], res)
+    ret = ReFUNCs['HO']['ZIPWITH']('MAX', res)
+    print "%s%s%s=%s" % (ret[0], 'MAX', ret[1], res)
+
+def scanl1_test():
+    v = range(10, 20)
+    random.shuffle(v)
+    print v
+    ret = FUNCs['HO']['SCANL1'][0](Lambdas['MAX'][0], v)
+    print ret
+    ret = ReFUNCs['HO']['SCANL1']('MAX', ret)
+    print ret
+    print FUNCs['HO']['SCANL1'][0](Lambdas['MAX'][0], ret)
+
 TEST_FUNCs = {
     'head': head_test,
     'last': last_test,
@@ -112,6 +176,14 @@ TEST_FUNCs = {
     'lambmul': lambmul_test,
     'lambmin': lambmin_test,
     'lambmax': lambmax_test,
+    'filter_p': filter_p_test,
+    'filter_n': filter_n_test,
+    'filter_e': filter_e_test,
+    'filter_o': filter_o_test,
+    'map': map_test,
+    'count': count_test,
+    'zipwith': zipwith_test,
+    'scanl1': scanl1_test,
 }
 
 if __name__ == '__main__':

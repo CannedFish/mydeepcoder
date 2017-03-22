@@ -193,17 +193,124 @@ def ReSUM(n, gcd=1, ordered=False):
         random.shuffle(gen_list)
     return gen_list
 
-def ReFilter_p():
-    pass
+def ReFilter_positive(v, gcd=1, ordered=False):
+    l = random.randint(3, 7)
+    gen_list = v + [random.randint(-20, 0)*gcd for i in xrange(l)]
+    if ordered:
+        gen_list = sorted(gen_list)
+    else:
+        random.shuffle(gen_list)
+    return gen_list
 
-def ReFilter_n():
-    pass
+def ReFilter_negative(v, gcd=1, ordered=False):
+    l = random.randint(3, 7)
+    gen_list = v + [random.randint(0, 20)*gcd for i in xrange(l)]
+    if ordered:
+        gen_list = sorted(gen_list)
+    else:
+        random.shuffle(gen_list)
+    return gen_list
 
-def ReFilter_even():
-    pass
+ODD_VECTOR = range(-99, 101, 2)
+def ReFilter_even(v, gcd=1, ordered=False):
+    l = random.randint(3, 7)
+    start = random.randint(0, 99-l)
+    gen_list = v + [i*gcd for i in ODD_VECTOR[start:start+l]]
+    if ordered:
+        gen_list = sorted(gen_list)
+    else:
+        random.shuffle(gen_list)
+    return gen_list
 
-def ReFilter_odd():
-    pass
+EVEN_VECTOR = range(-100, 100, 2)
+def ReFilter_odd(v, gcd=1, ordered=False):
+    l = random.randint(3, 7)
+    start = random.randint(0, 99-l)
+    gen_list = v + [i*gcd for i in EVEN_VECTOR[start:start+l]]
+    if ordered:
+        gen_list = sorted(gen_list)
+    else:
+        random.shuffle(gen_list)
+    return gen_list
+
+def ReFilter(f, v, gcd=1, ordered=False):
+    if f == '(>0)':
+        return ReFilter_positive(v, gcd, ordered)
+    elif f == '(<0)':
+        return ReFilter_negative(v, gcd, ordered)
+    elif f == '(%2==0)':
+        return ReFilter_even(v, gcd, ordered)
+    elif f == '(%2==1)':
+        return ReFilter_odd(v, gcd, ordered)
+    else:
+        raise ValueError('Bad lambda: %s', f)
+
+def ReMap(f, v):
+    if Lambdas[f][2] == 2 or len(Lambdas[f][1]) > 1:
+        raise ValueError('Bad lambda: %s', f)
+    return map(ReLambdas[f], v)
+
+def ReCOUNT(f, n, gcd=1, ordered=False):
+    if f == '(>0)':
+        gen_list = range(1, n+1)
+        gen_list.extend([random.randint(-10, 0) for i in range(5)])
+    elif f == '(<0)':
+        gen_list = [-i for i in range(1, n+1)]
+        gen_list.extend([random.randint(0, 10) for i in range(5)])
+    elif f == '(%2==0)':
+        gen_list = [i for i in range(0, 2*n, 2)]
+        gen_list.extend([ODD_VECTOR[random.randint(0, 99)] for i in range(5)])
+    elif f == '(%2==1)':
+        gen_list = [i for i in range(1, 2*n+1, 2)]
+        gen_list.extend([EVEN_VECTOR[random.randint(0, 99)] for i in range(5)])
+    else:
+        raise ValueError('Bad lambda: %s', f)
+    if gcd > 1:
+        gen_list = map(lambda x: x*gcd, gen_list)
+    if ordered:
+        gen_list = sorted(gen_list)
+    else:
+        random.shuffle(gen_list)
+    return gen_list
+
+def ReZIPWITH(f, v, gcd=1):
+    if len(Lambdas[f][1]) < 2:
+        raise ValueError('Bad lambda: %s', f)
+    gen_list1 = []
+    gen_list2 = []
+    for e in v:
+        a, b = ReLambdas[f](e, gcd)
+        gen_list1.append(a)
+        gen_list2.append(b)
+    return gen_list1, gen_list2
+
+def ReSCANL1(f, v, gcd=1):
+    y = [v[-1]] * len(v)
+    y[0] = v[0]
+    if f == '(+)':
+        for i in range(1, len(v))[::-1]:
+            y[i] = v[i] - v[i-1]
+    elif f == '(-)':
+        for i in range(1, len(v))[::-1]:
+            y[i] = v[i-1] - v[i]
+    elif f == '(*)':
+        for i in range(1, len(v))[::-1]:
+            y[i] = v[i] / v[i-1]
+    elif f == 'MIN':
+        for i in range(1, len(v))[::-1]:
+            if v[i] == v[i-1]:
+                y[i] = v[i] + random.randint(0, 10)
+            else:
+                y[i] = v[i]
+    elif f == 'MAX':
+        for i in range(1, len(v))[::-1]:
+            if v[i] == v[i-1]:
+                y[i] = v[i] - random.randint(0, 10)
+            else:
+                y[i] = v[i]
+    else:
+        raise ValueError('Bad lambda: %s', f)
+    return y
 
 ReFUNCs = {
     'FO': {
@@ -219,10 +326,11 @@ ReFUNCs = {
         'SUM': ReSUM
     },
     'HO': {
-        'FILTER_(>0)': ReFilter_p,
-        'FILTER_(<0)': ReFilter_n,
-        'FILTER_(%2==0)': ReFilter_even,
-        'FILTER_(%2==1)': ReFilter_odd,
+        'FILTER': ReFilter,
+        'MAP': ReMap,
+        'COUNT': ReCOUNT,
+        'ZIPWITH': ReZIPWITH,
+        'SCANL1': ReSCANL1
     }
 }
 
@@ -256,10 +364,18 @@ def ReLambda_mul(n, gcd=1):
     return a, b
 
 def ReLambda_min(n, gcd=1):
-    return (n + random.randint(0, 5)) * gcd, n
+    if random.randint(0, 1) == 0:
+        a, b = (n + random.randint(0, 5)) * gcd, n
+    else:
+        b, a = (n + random.randint(0, 5)) * gcd, n
+    return a, b
 
 def ReLambda_max(n, gcd=1):
-    return (n - random.randint(0, 5)) * gcd, n
+    if random.randint(0, 1) == 0:
+        a, b = (n - random.randint(0, 5)) * gcd, n
+    else:
+        b, a = (n - random.randint(0, 5)) * gcd, n
+    return a, b
 
 ReLambdas = {
     '(+1)': lambda x: x-1,

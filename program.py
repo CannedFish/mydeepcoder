@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from dsl import FUNCs, Lambdas
+from dsl import FUNCs, Lambdas, ReFUNCs, ReLambdas
 
 class Step(object):
     def __init__(self, step_func, step_lambda=None):
