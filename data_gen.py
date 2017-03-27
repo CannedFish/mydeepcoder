@@ -3,9 +3,9 @@
 import sys, pickle
 
 from dsl import FUNCs, Lambdas
+from program import Program, Step
 
 PROGRAMs = []
-# DEBUG = True
 
 def save(f_path):
     """
@@ -21,8 +21,11 @@ def save(f_path):
 
 def search_next(cur, program, fo_remain, ho_remain, target_len):
     if len(program) == target_len:
-        PROGRAMs.append(program)
-        print program
+        p = Program()
+        for s in program:
+            p.append_step(Step(*s))
+        PROGRAMs.append(p)
+        # print p
         return
     else:
         # NOTE: tunable
@@ -40,7 +43,7 @@ def search_next(cur, program, fo_remain, ho_remain, target_len):
                     valid_ho_funcs, \
                     target_len)
         for func in valid_ho_funcs:
-            for lambs in filter(lambda x: Lambdas[x][3]\
+            for lambs in filter(lambda x: (Lambdas[x][3], Lambdas[x][2])\
                     ==FUNCs['HO'][func][1][0], \
                     [l for l in Lambdas]):
                 search_next(FUNCs['HO'][func], \
@@ -50,7 +53,7 @@ def search_next(cur, program, fo_remain, ho_remain, target_len):
                         target_len)
 
 def main(length, f_path):
-    print "Generating programs whose length is %d" % length
+    print "Generating programs whose length is %d..." % length
     fo_funcs = [func for func in FUNCs['FO']]
     ho_funcs = [func for func in FUNCs['HO']]
     for func in fo_funcs:
@@ -60,12 +63,18 @@ def main(length, f_path):
                 ho_funcs, \
                 length)
     for func in ho_funcs:
-        search_next(FUNCs['HO'][func], \
-                [(func,)], \
-                fo_funcs, \
-                filter(lambda x: x!=func, ho_funcs), \
-                length)
-    save(f_path)
+        for lambs in filter(lambda x: (Lambdas[x][3], Lambdas[x][2])\
+                ==FUNCs['HO'][func][1][0], \
+                [l for l in Lambdas]):
+            search_next(FUNCs['HO'][func], \
+                    [(func, lambs)], \
+                    fo_funcs, \
+                    filter(lambda x: x!=func, ho_funcs), \
+                    length)
+    print "Prepare input-output for programs..."
+    for program in PROGRAMs:
+        print program.generate_func_in()
+    # save(f_path)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

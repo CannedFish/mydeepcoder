@@ -29,13 +29,13 @@ FUNCs = {
         'SORT': [lambda v: sorted(v), (1,), 1],
         'SUM': [lambda v: sum(v), (1,), 0],
     },
-# High Order
+# High Order, lambda ==> (lambda type, output type)
     'HO': {
-        'MAP': [lambda f, v: [f(x) for x in v], (3, 1), 1],
-        'FILTER': [lambda f, v: [x for x in v if f(x)], (3, 1), 1],
-        'COUNT': [lambda f, v: len([x for x in v if f(x)]), (3, 1), 0],
-        'ZIPWITH': [lambda f, v1, v2: [f(x, y) for x, y in zip(v1, v2)], (4, 1, 1), 1],
-        'SCANL1': [SCANL1, (4, 1), 1]
+        'MAP': [lambda f, v: [f(x) for x in v], ((3, 0), 1), 1],
+        'FILTER': [lambda f, v: [x for x in v if f(x)], ((3, 2), 1), 1],
+        'COUNT': [lambda f, v: len([x for x in v if f(x)]), ((3, 2), 1), 0],
+        'ZIPWITH': [lambda f, v1, v2: [f(x, y) for x, y in zip(v1, v2)], ((4, 0), 1, 1), 1],
+        'SCANL1': [SCANL1, ((4, 0), 1), 1]
     }
 }
 
@@ -62,6 +62,13 @@ Lambdas = {
     'MIN': [lambda x, y: x if x<y else y, (0, 0), 0, 4],
     'MAX': [lambda x, y: x if x>y else y, (0, 0), 0, 4],
 }
+
+def initial_list(gcd, ordered):
+    gen_list = _gen_ordered_list() if ordered else _gen_list()
+    return [a*gcd for a in gen_list] if gcd != 1 else gen_list
+
+def initial_int(gcd):
+    return random.randint(-100, 100)*gcd
 
 def _gen_ordered_list(min_=None, max_=None, length=None):
     l = length-1 if length is not None \
