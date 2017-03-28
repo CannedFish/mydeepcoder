@@ -22,7 +22,7 @@ FUNCs = {
         'LAST': [lambda v: v[-1] if len(v)>0 else None, (1,), 0],
         'TAKE': [lambda n, v: v[:n], (0, 1), 1],
         'DROP': [lambda n, v: v[n:], (0, 1), 1],
-        'ACCESS': [lambda n, v: v[n] if n>=0 and len(v)>n else None, (0, 1), 1],
+        'ACCESS': [lambda n, v: v[n] if n>=0 and len(v)>n else None, (0, 1), 0],
         'MINIMUM': [lambda v: min(v) if len(v)>0 else None, (1,), 0],
         'MAXIMUM': [lambda v: max(v) if len(v)>0 else None, (1,), 0],
         'REVERSE': [lambda v: list(reversed(v)), (1,), 1],

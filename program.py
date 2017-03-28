@@ -9,6 +9,8 @@ class Step(object):
         self._ordered = False
         self._func = step_func
         self._lambda = step_lambda
+        self._next = None
+        self._prev = []
         if step_lambda == None:
             self._func_type = 'FO'
             self._step_func = FUNCs['FO'][step_func]
@@ -93,10 +95,27 @@ class Step(object):
     def step_output_type(self):
         return self._step_func[2]
 
+    @property
+    def next_step(self):
+        return self._next
+
+    @next_step.setter
+    def next_step(self, val):
+        self._next = val
+
+    @property
+    def prev_step(self):
+        return self._prev
+
+    @prev_step.setter
+    def prev_step(self, val):
+        self._prev.append(val)
+
 class Program(object):
     def __init__(self):
         self._steps = []
         self._samples = []
+        self._param_stack = []
         # NOTE: Let Step do it self
         # self._gcd = 1
 
@@ -121,15 +140,22 @@ class Program(object):
             if func_out == None:
                 if self._steps[-1].step_output_type == 0:
                     func_out = initial_int(self._steps[-1].step_gcd(gcd))
+                    init_p = func_out
                 elif self._steps[-1].step_output_type == 1:
                     func_out = initial_list(self._steps[-1].step_gcd(gcd), \
                             self._steps[-1].step_ordered(ordered))
-            init_p = []
-            init_p.extend(func_out)
+                    init_p = []
+                    init_p.extend(func_out)
             return self._steps[step_now].step_in(init_p), func_out
         _step_in, _out = self._dfs_exec(step_now+1, func_out, \
                 self._steps[step_now].step_gcd(gcd), \
                 self._steps[step_now].step_ordered(ordered))
+        # TODO: Put parameters into param_stack
+        if len(_step_in) > 1:
+            for si in _step_in:
+                _s = self._steps[step_now].step_in(si)
+                if _s != None:
+                    return tuple([_s]+[x for x in _step_in if x != si]), _out
         return self._steps[step_now].step_in(*_step_in), _out
 
     def generate_func_in(self, func_out=None):

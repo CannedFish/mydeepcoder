@@ -22,8 +22,14 @@ def save(f_path):
 def search_next(cur, program, fo_remain, ho_remain, target_len):
     if len(program) == target_len:
         p = Program()
-        for s in program:
-            p.append_step(Step(*s))
+        for s, idx in zip(program, range(len(program))):
+            # TODO: construct the execute graph
+            st = Step(*s)
+            if idx != len(program)-1:
+                st.next_step = program[idx+1]
+            if idx != 0:
+                st.prev_step = program[idx-1]
+            p.append_step(st)
         PROGRAMs.append(p)
         # print p
         return
@@ -71,10 +77,10 @@ def main(length, f_path):
                     fo_funcs, \
                     filter(lambda x: x!=func, ho_funcs), \
                     length)
+    save(f_path)
     print "Prepare input-output for programs..."
     for program in PROGRAMs:
         print program.generate_func_in()
-    # save(f_path)
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
