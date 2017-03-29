@@ -9,8 +9,6 @@ class Step(object):
         self._ordered = False
         self._func = step_func
         self._lambda = step_lambda
-        self._next = None
-        self._prev = []
         if step_lambda == None:
             self._func_type = 'FO'
             self._step_func = FUNCs['FO'][step_func]
@@ -95,37 +93,12 @@ class Step(object):
     def step_output_type(self):
         return self._step_func[2]
 
-    @property
-    def next_step(self):
-        return self._next
-
-    @next_step.setter
-    def next_step(self, val):
-        self._next = val
-
-    @property
-    def prev_step(self):
-        return self._prev
-
-    @prev_step.setter
-    def prev_step(self, val):
-        self._prev.append(val)
-
 class Program(object):
     def __init__(self):
         self._steps = []
         self._samples = []
-        self._param_stack = []
-        # NOTE: Let Step do it self
-        # self._gcd = 1
-
-    # def _check_divisible(self, step):
-        # """
-        # Check if this program has operations like *2, *3, etc,
-        # and make sure results after /2, /3, etc are integers.
-        # Modify the greatest common divisor.
-        # """
-        # self._gcd = 1
+        self._exec_flow = {}
+        self._param_num = 0
 
     def __str__(self):
         return str([str(step) for step in self._steps])
@@ -134,6 +107,20 @@ class Program(object):
         if type(step) != Step:
             raise TypeError('Should be an instance of Step, not %s', type(step))
         self._steps.append(step)
+        # Update the execution flow
+        prev_res = None
+        step_idx = len(self._steps)-1
+        for f in self._exec_flow.items():
+            if f[1][1] is None:
+                prev_res = f[0]
+        if prev_res is None:
+            self._param_num += 1
+            self._exec_flow[str(-self._param_num)] = [None, str(step_idx)]
+            self._exec_flow[str(step_idx)] = [str(-self._param_num), None]
+        else:
+            self._exec_flow[str(step_idx)] = [prev_res, None]
+            self._exec_flow[prev_res][1] = str(step_idx)
+        # TODO: handle functions need two inputs
 
     def _dfs_exec(self, step_now, func_out, gcd, ordered):
         if step_now == len(self._steps)-1:
@@ -151,11 +138,11 @@ class Program(object):
                 self._steps[step_now].step_gcd(gcd), \
                 self._steps[step_now].step_ordered(ordered))
         # TODO: Put parameters into param_stack
-        if len(_step_in) > 1:
-            for si in _step_in:
-                _s = self._steps[step_now].step_in(si)
-                if _s != None:
-                    return tuple([_s]+[x for x in _step_in if x != si]), _out
+        # if len(_step_in) > 1:
+            # for si in _step_in:
+                # _s = self._steps[step_now].step_in(si)
+                # if _s != None:
+                    # return tuple([_s]+[x for x in _step_in if x != si]), _out
         return self._steps[step_now].step_in(*_step_in), _out
 
     def generate_func_in(self, func_out=None):
@@ -172,6 +159,6 @@ class Program(object):
         """
         Execute this program and return the result.
         """
-        # TODO: travel steps
+        # TODO: travel exec_flow from minimun idx
         return []
 

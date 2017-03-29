@@ -22,14 +22,8 @@ def save(f_path):
 def search_next(cur, program, fo_remain, ho_remain, target_len):
     if len(program) == target_len:
         p = Program()
-        for s, idx in zip(program, range(len(program))):
-            # TODO: construct the execute graph
-            st = Step(*s)
-            if idx != len(program)-1:
-                st.next_step = program[idx+1]
-            if idx != 0:
-                st.prev_step = program[idx-1]
-            p.append_step(st)
+        for s in program:
+            p.append_step(Step(*s))
         PROGRAMs.append(p)
         # print p
         return
