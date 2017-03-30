@@ -9,12 +9,15 @@ class Step(object):
         self._ordered = False
         self._func = step_func
         self._lambda = step_lambda
+        self._multi_param = False
         if step_lambda == None:
             self._func_type = 'FO'
             self._step_func = FUNCs['FO'][step_func]
             self._step_refunc = ReFUNCs['FO'][step_func]
             if step_func == 'SORT':
                 self._ordered = True
+            if len(self._step_func[1]) > 1:
+                self._multi_param = True
         else:
             self._func_type = 'HO'
             self._step_func = FUNCs['HO'][step_func]
@@ -26,6 +29,8 @@ class Step(object):
                 self._gcd = 3
             elif step_lambda == '(*4)':
                 self._gcd = 4
+            if len(self._step_func[1]) > 2:
+                self._multi_param = True
             # TODO: odd or even?
             # TODO: sqrt 2?
             # TODO: positive or negative?
@@ -88,10 +93,18 @@ class Step(object):
         Return ordered after this step
         """
         return ordered_now or self._ordered
+        return self._step_func[2]
+
+    @property
+    def multi_param(self):
+        return self._multi_param
+
+    @property
+    def param_type(self):
+        return self._step_func[1]
 
     @property
     def step_output_type(self):
-        return self._step_func[2]
 
 class Program(object):
     def __init__(self):
@@ -103,6 +116,15 @@ class Program(object):
     def __str__(self):
         return str([str(step) for step in self._steps])
 
+    def _add_param(self, idx):
+        self._param_num += 1
+        self._exec_flow[str(-self._param_num)] = [None, idx]
+        self._exec_flow[idx] = [str(-self._param_num), None]
+
+    def _add_step(self, idx, prev_idx):
+        self._exec_flow[idx] = [prev_idx, None]
+        self._exec_flow[prev_idx][1] = idx
+
     def append_step(self, step):
         if type(step) != Step:
             raise TypeError('Should be an instance of Step, not %s', type(step))
@@ -113,14 +135,23 @@ class Program(object):
         for f in self._exec_flow.items():
             if f[1][1] is None:
                 prev_res = f[0]
+                break
         if prev_res is None:
-            self._param_num += 1
-            self._exec_flow[str(-self._param_num)] = [None, str(step_idx)]
-            self._exec_flow[str(step_idx)] = [str(-self._param_num), None]
+            if step.multi_param:
+                param_num = 2
+            else:
+                param_num = 1
+            for i in range(param_num):
+                self._add_param(str(step_idx))
         else:
-            self._exec_flow[str(step_idx)] = [prev_res, None]
-            self._exec_flow[prev_res][1] = str(step_idx)
-        # TODO: handle functions need two inputs
+            if step.multi_param:
+                p_type = step.param_type
+                prev_step = self._steps[int(prev_res)]
+                pr_type = prev_step.step_output_type
+                for pa in step.param_type:
+                    if pr_type == pa:
+            else:
+                self._add_step(str(step_idx), prev_res)
 
     def _dfs_exec(self, step_now, func_out, gcd, ordered):
         if step_now == len(self._steps)-1:
