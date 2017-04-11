@@ -35,7 +35,7 @@ def access_test():
     ret = FUNCs['FO']['ACCESS'][0](value, vector)
     print '(%d, %s), %d, %s' % (value, vector, ret, ReFUNCs['FO']['ACCESS'](ret))
     ret = FUNCs['FO']['ACCESS'][0](value, ordered_vector)
-    print '(%d, %s), %d, %s' % (value, ordered_vector, ret, ReFUNCs['FO']['ACCESS'](ret, gcd=2, ordered=True))
+    print '(%d, %s), %d, %s' % (0, ordered_vector, ret, ReFUNCs['FO']['ACCESS'](ret, gcd=2, ordered=True))
 
 def minimum_test():
     ret = FUNCs['FO']['MINIMUM'][0](vector)

@@ -66,21 +66,21 @@ class Step(object):
             return self._step_func[0](self._step_lambda[0], *step_in)
         return self._step_func[0](*step_in)
 
-    def step_in(self, *step_out):
+    def step_in(self, step_out):
         """
         Return a step_in based on a step_out
         """
         if self._func_type == 'FO' and \
-                not self._type_check(step_out[0], \
+                not self._type_check(step_out, \
                     self._step_func[2]) or \
                 self._func_type == 'HO' and \
-                not self._type_check(step_out[0], \
+                not self._type_check(step_out, \
                     self._step_func[2]):
             print '%s step out type error' % self._step_func
             return None
         if self._func_type == 'HO':
-            return self._step_refunc(self._lambda, *step_out)
-        return self._step_refunc(*step_out)
+            return self._step_refunc(self._lambda, step_out)
+        return self._step_refunc(step_out)
 
     def step_gcd(self, gcd_now):
         """
@@ -93,7 +93,6 @@ class Step(object):
         Return ordered after this step
         """
         return ordered_now or self._ordered
-        return self._step_func[2]
 
     @property
     def multi_param(self):
@@ -105,24 +104,38 @@ class Step(object):
 
     @property
     def step_output_type(self):
+        return self._step_func[2]
 
 class Program(object):
     def __init__(self):
         self._steps = []
         self._samples = []
+        # {'key2': [['key0', 'key1'], 'key2']}
         self._exec_flow = {}
         self._param_num = 0
 
     def __str__(self):
         return str([str(step) for step in self._steps])
 
-    def _add_param(self, idx):
+    def _add_param(self, idx, p_type):
+        """
+        param idx: the index of step use this parameter
+        return: the index of this parameter
+        """
         self._param_num += 1
-        self._exec_flow[str(-self._param_num)] = [None, idx]
-        self._exec_flow[idx] = [str(-self._param_num), None]
+        self._exec_flow[str(-self._param_num)] = [None, idx, p_type]
+        return str(-self._param_num)
 
-    def _add_step(self, idx, prev_idx):
-        self._exec_flow[idx] = [prev_idx, None]
+    def _add_step(self, idx, prev_idx, p_num=1, p_idx=0):
+        """
+        param idx: the index of step use this parameter
+        param prev_idx: the index of step before this step
+        param p_num: the number of p_num
+        param p_idx: the index of this parameter
+        """
+        if not self._exec_flow.has_key(idx):
+            self._exec_flow[idx] = [[0]*p_num, None]
+        self._exec_flow[idx][0][p_idx] = prev_idx
         self._exec_flow[prev_idx][1] = idx
 
     def append_step(self, step):
@@ -141,15 +154,20 @@ class Program(object):
                 param_num = 2
             else:
                 param_num = 1
-            for i in range(param_num):
-                self._add_param(str(step_idx))
+            for i, p_type in zip(range(param_num), step.param_type):
+                p_idx = self._add_param(str(step_idx), p_type)
+                self._add_step(str(step_idx), p_idx, param_num, i)
         else:
             if step.multi_param:
-                p_type = step.param_type
                 prev_step = self._steps[int(prev_res)]
                 pr_type = prev_step.step_output_type
-                for pa in step.param_type:
+                param_num = len(step.param_type)
+                for pa, i in zip(step.param_type, range(param_num)):
                     if pr_type == pa:
+                        self._add_step(str(step_idx), prev_res, param_num, i)
+                    else:
+                        self._add_step(str(step_idx), \
+                                self._add_param(str(step_idx), pa), param_num, i)
             else:
                 self._add_step(str(step_idx), prev_res)
 
@@ -164,17 +182,21 @@ class Program(object):
                             self._steps[-1].step_ordered(ordered))
                     init_p = []
                     init_p.extend(func_out)
-            return self._steps[step_now].step_in(init_p), func_out
+            return self._steps[step_now].step_in(init_p), [{}, func_out]
         _step_in, _out = self._dfs_exec(step_now+1, func_out, \
                 self._steps[step_now].step_gcd(gcd), \
                 self._steps[step_now].step_ordered(ordered))
-        # TODO: Put parameters into param_stack
-        # if len(_step_in) > 1:
-            # for si in _step_in:
-                # _s = self._steps[step_now].step_in(si)
-                # if _s != None:
-                    # return tuple([_s]+[x for x in _step_in if x != si]), _out
-        return self._steps[step_now].step_in(*_step_in), _out
+        flow = self._exec_flow[str(step_now+1)]
+        _step_out = None
+        if type(_step_in) == tuple:
+            for p, i in zip(flow[0], range(len(flow))):
+                if int(p) < 0:
+                    _out[0][p] = _step_in[i]
+                else:
+                    _step_out = _step_in[i]
+        else:
+            _step_out = _step_in
+        return self._steps[step_now].step_in(_step_out), _out
 
     def generate_func_in(self, func_out=None):
         """
@@ -182,9 +204,11 @@ class Program(object):
         """
         import pdb
         pdb.set_trace()
-        in_out = self._dfs_exec(0, func_out, 1, False)
-        self._samples.append(in_out)
-        return in_out
+        for i in range(5):
+            in_out = self._dfs_exec(0, func_out, 1, False)
+            in_out[1][0][self._exec_flow['0'][0][0]] = in_out[0]
+            self._samples.append(in_out[1])
+        return self._samples
 
     def execute(self, func_in):
         """

@@ -141,6 +141,7 @@ def ReDROP(v, gcd=1, ordered=False):
     return len(gen_list)-1, gen_list[:-1] + v
 
 def ReACCESS(n, gcd=1, ordered=False):
+    # TODO: some strange bug
     if ordered:
         gen_list1 = _gen_ordered_list(max_=n/gcd, \
                 length=random.randint(2, 5))
