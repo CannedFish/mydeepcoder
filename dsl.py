@@ -144,9 +144,9 @@ def ReACCESS(n, gcd=1, ordered=False):
     # TODO: some strange bug
     if ordered:
         gen_list1 = _gen_ordered_list(max_=n/gcd, \
-                length=random.randint(2, 5))
+                length=random.randint(3, 5))
         gen_list2 = _gen_ordered_list(min_=n/gcd, \
-                length=random.randint(2, 5))
+                length=random.randint(3, 5))
         idx, gen_list = len(gen_list1)-1, gen_list1+gen_list2[1:]
     else:
         gen_list = _gen_list()

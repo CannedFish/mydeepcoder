@@ -28,14 +28,11 @@ def search_next(cur, program, fo_remain, ho_remain, target_len):
         # print p
         return
     else:
-        # NOTE: tunable
-        # How can I put functions like ZIPWITH after 2 functions which 
-        # produce an integer array?
         valid_fo_funcs = filter(lambda x: FUNCs['FO'][x][1][0] == cur[2] \
                 if len(FUNCs['FO'][x][1]) == 1 \
                 else FUNCs['FO'][x][1][1] == cur[2], fo_remain)
-        valid_ho_funcs = filter(lambda x: len(FUNCs['HO'][x][1]) == 2 \
-                and FUNCs['HO'][x][1][1] == cur[2], ho_remain)
+        # len(FUNCs['HO'][x][1]) == 2 \ and 
+        valid_ho_funcs = filter(lambda x: FUNCs['HO'][x][1][1] == cur[2], ho_remain)
         for func in valid_fo_funcs:
             search_next(FUNCs['FO'][func], \
                     program+[(func,)], \
@@ -81,7 +78,7 @@ if __name__ == '__main__':
         print "Usage: python data_gen.py $Length[ $File $DEBUG]\n" +\
                 "Param $Length: the length of programe\n" +\
                 "Param $File: the path of file to save" +\
-                "Param $DEBUG: True or False\n" +\
+                "Param $DEBUG: True or False\n"
         sys.exit(1)
 
     f_path = './generated_data.dat' \

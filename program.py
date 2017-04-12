@@ -108,7 +108,9 @@ class Step(object):
 
 class Program(object):
     def __init__(self):
+        # [Step, Step, ...]
         self._steps = []
+        # [[{'-2': param1, '-1': param2}, result], ...]
         self._samples = []
         # {'key2': [['key0', 'key1'], 'key2']}
         self._exec_flow = {}
@@ -202,18 +204,86 @@ class Program(object):
         """
         Return a valid input of this program based on the output.
         """
-        import pdb
-        pdb.set_trace()
+        # generate
         for i in range(5):
-            in_out = self._dfs_exec(0, func_out, 1, False)
-            in_out[1][0][self._exec_flow['0'][0][0]] = in_out[0]
-            self._samples.append(in_out[1])
+            _step_in, _out = self._dfs_exec(0, func_out, 1, False)
+            if type(_step_in)==tuple:
+                params = _step_in
+            else:
+                params = (_step_in, )
+            for param, i in zip(params, range(len(params))):
+                _out[0][self._exec_flow['0'][0][i]] = param
+            self._samples.append(_out)
+        # verify
+        self.verify(self._samples)
+
         return self._samples
 
     def execute(self, func_in):
         """
         Execute this program and return the result.
         """
-        # TODO: travel exec_flow from minimun idx
-        return []
+        # check the number of parameters
+        if len(func_in) != self._param_num:
+            print "Parameter number Error"
+            return 
+
+        # check the type of parameters
+        params_type = sorted([s for s in self._exec_flow.items() \
+                if int(s[0]) < 0], key=lambda x: int(x[0]))
+        for param, p_target in zip(func_in, params_type):
+            if type(param) == int:
+                p_type = 0
+            elif type(param) == list and type(param[0]) == int:
+                p_type = 1
+            else:
+                p_type = -1
+            if p_type != p_target[1][2]:
+                print "Parameter type Error"
+                return 
+
+        # execute
+        # travel exec_flow from minimun idx
+        progress = [p for p in func_in] # cache input of each step
+        progress.extend([None]*len(self._steps))
+        exec_order = sorted(self._exec_flow.keys(), key=lambda x: int(x))
+        result = []
+        for s, i in zip(exec_order, range(len(exec_order))):
+            next_s = self._exec_flow[s][1]
+            if next_s is not None:
+                next_p = int(next_s) + self._param_num
+                if progress[next_p] is None:
+                    progress[next_p] = [0]*len(self._exec_flow[next_s][0])
+                idx = self._exec_flow[next_s][0].index(s)
+                if int(s) < 0:
+                    progress[next_p][idx] = progress[i]
+                else:
+                    step = self._steps[int(s)]
+                    ret = step.step_out(*tuple(progress[int(s)+self._param_num]))
+                    progress[next_p][idx] = ret
+            else:
+                step = self._steps[int(s)]
+                result = step.step_out(*tuple(progress[int(s)+self._param_num]))
+        
+        return result
+
+    def verify(self, samples):
+        """
+        :param samples: [({'-2': param1, '-1': param2, ...}, result), ...]
+        """
+        import pdb
+        pdb.set_trace()
+        ok = 0
+        for sample in samples:
+            ss = sorted([p for p in sample[0].items()], \
+                    key=lambda x: int(x[0]))
+            ret = self.execute(tuple([s[1] for s in ss]))
+            if ret == sample[1]:
+                print "%s OK" % sample
+                ok += 1
+            else:
+                print "Failed: %s, sample is %s, result is %s" % \
+                        (sample[0], sample[1], ret)
+        print "%d samples tested, ok persent is %d/%d" \
+                % (len(samples), ok, len(samples))
 
