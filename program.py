@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from dsl import FUNCs, Lambdas, ReFUNCs, ReLambdas, \
-        initial_list, initial_int
+        initial_list, initial_int, TYPE
 
 class Step(object):
     def __init__(self, step_func, step_lambda=None):
@@ -10,12 +10,18 @@ class Step(object):
         self._func = step_func
         self._lambda = step_lambda
         self._multi_param = False
+        self._reversed = False
+        self._oddeven = None
+        self._sign = None
+        # TODO: sqrt 2?
         if step_lambda == None:
             self._func_type = 'FO'
             self._step_func = FUNCs['FO'][step_func]
             self._step_refunc = ReFUNCs['FO'][step_func]
             if step_func == 'SORT':
                 self._ordered = True
+            elif step_func == 'REVERSE':
+                self._reversed = True
             if len(self._step_func[1]) > 1:
                 self._multi_param = True
         else:
@@ -29,11 +35,16 @@ class Step(object):
                 self._gcd = 3
             elif step_lambda == '(*4)':
                 self._gcd = 4
+            elif step_lambda == '(%2==0)':
+                self._oddeven = 0
+            elif step_lambda == '(%2==1)':
+                self._oddeven = 1
+            elif step_lambda == '(>0)':
+                self._sign = 1
+            elif step_lambda == '(<0)':
+                self._sign = -1
             if len(self._step_func[1]) > 2:
                 self._multi_param = True
-            # TODO: odd or even?
-            # TODO: sqrt 2?
-            # TODO: positive or negative?
 
     def __str__(self):
         return "(%s, %s)" % (self._func, self._lambda)
@@ -66,7 +77,7 @@ class Step(object):
             return self._step_func[0](self._step_lambda[0], *step_in)
         return self._step_func[0](*step_in)
 
-    def step_in(self, step_out):
+    def step_in(self, step_out, **kwargs):
         """
         Return a step_in based on a step_out
         """
@@ -80,7 +91,7 @@ class Step(object):
             return None
         if self._func_type == 'HO':
             return self._step_refunc(self._lambda, step_out)
-        return self._step_refunc(step_out)
+        return self._step_refunc(step_out, **kwargs)
 
     def step_gcd(self, gcd_now):
         """
@@ -93,6 +104,30 @@ class Step(object):
         Return ordered after this step
         """
         return ordered_now or self._ordered
+
+    def step_reveresd(self, reversed_now):
+        """
+        Return ordered after this step, use xor
+        """
+        return reversed_now ^ self._reversed
+
+    def step_oddeven(self, oddeven_now):
+        # TODO: How to consider previous status
+        return self._oddeven
+
+    def step_sign(self, sign_now):
+        """
+        -1 means negative
+        1 means positive
+        0 means zero
+        """
+        if self._sign is None:
+            return sign_now
+        if sign_now is None:
+            return self._sign
+        if sign_now != self._sign:
+            return 0
+        return sign_now
 
     @property
     def multi_param(self):
@@ -173,21 +208,29 @@ class Program(object):
             else:
                 self._add_step(str(step_idx), prev_res)
 
-    def _dfs_exec(self, step_now, func_out, gcd, ordered):
+    def _dfs_exec(self, step_now, func_out, **kw): # gcd, ordered, _reversed, oddeven
         if step_now == len(self._steps)-1:
             if func_out == None:
                 if self._steps[-1].step_output_type == 0:
-                    func_out = initial_int(self._steps[-1].step_gcd(gcd))
+                    func_out = initial_int(self._steps[-1].step_gcd(kw['gcd']))
                     init_p = func_out
                 elif self._steps[-1].step_output_type == 1:
-                    func_out = initial_list(self._steps[-1].step_gcd(gcd), \
-                            self._steps[-1].step_ordered(ordered))
+                    func_out = initial_list(gcd=self._steps[-1].step_gcd(kw['gcd']), \
+                            ordered=self._steps[-1].step_ordered(kw['ordered']), \
+                            _reversed=self._steps[-1].step_reveresd(kw['_reversed']), \
+                            oddeven=self._steps[-1].step_oddeven(kw['oddeven']), \
+                            sign=self._steps[-1].step_oddeven(kw['sign']))
+                    # deep copy
                     init_p = []
                     init_p.extend(func_out)
-            return self._steps[step_now].step_in(init_p), [{}, func_out]
+            return self._steps[step_now].step_in(init_p, gcd=kw['gcd'], \
+                    ordered=kw['ordered'], _reversed=kw['_reversed']), [{}, func_out]
         _step_in, _out = self._dfs_exec(step_now+1, func_out, \
-                self._steps[step_now].step_gcd(gcd), \
-                self._steps[step_now].step_ordered(ordered))
+                gcd=self._steps[step_now].step_gcd(kw['gcd']), \
+                ordered=self._steps[step_now].step_ordered(kw['ordered']), \
+                _reversed=self._steps[step_now].step_reveresd(kw['_reversed']), \
+                oddeven=self._steps[step_now].step_oddeven(kw['oddeven']), \
+                sign=self._steps[step_now].step_oddeven(kw['sign']))
         flow = self._exec_flow[str(step_now+1)]
         _step_out = None
         if type(_step_in) == tuple:
@@ -198,24 +241,38 @@ class Program(object):
                     _step_out = _step_in[i]
         else:
             _step_out = _step_in
-        return self._steps[step_now].step_in(_step_out), _out
+        # print 'Step: %d, Step in: %s, Out: %s' % (step_now+1, _step_in, _out)
+        return self._steps[step_now].step_in(_step_out, gcd=kw['gcd'], \
+                ordered=kw['ordered'], _reversed=kw['_reversed']), _out
 
     def generate_func_in(self, func_out=None):
         """
         Return a valid input of this program based on the output.
         """
         # generate
+        kw = {
+            'gcd': 1,
+            'ordered': False,
+            '_reversed': False,
+            'oddeven': None,
+            'sign': None
+        }
         for i in range(5):
-            _step_in, _out = self._dfs_exec(0, func_out, 1, False)
+            _step_in, _out = self._dfs_exec(0, func_out, **kw)
             if type(_step_in)==tuple:
                 params = _step_in
             else:
                 params = (_step_in, )
             for param, i in zip(params, range(len(params))):
                 _out[0][self._exec_flow['0'][0][i]] = param
+            # print 'Step: %d, Step in: %s, Out: %s' % (0, _step_in, _out)
             self._samples.append(_out)
         # verify
-        self.verify(self._samples)
+        a, b = self.verify(self._samples)
+        if a != b:
+            print str(self)
+            import pdb
+            pdb.set_trace()
 
         return self._samples
 
@@ -239,7 +296,8 @@ class Program(object):
             else:
                 p_type = -1
             if p_type != p_target[1][2]:
-                print "Parameter type Error"
+                print "Parameter type Error, should be %s" % \
+                        tuple([TYPE[p[1][2]] for p in params_type])
                 return 
 
         # execute
@@ -271,8 +329,6 @@ class Program(object):
         """
         :param samples: [({'-2': param1, '-1': param2, ...}, result), ...]
         """
-        import pdb
-        pdb.set_trace()
         ok = 0
         for sample in samples:
             ss = sorted([p for p in sample[0].items()], \
@@ -286,4 +342,5 @@ class Program(object):
                         (sample[0], sample[1], ret)
         print "%d samples tested, ok persent is %d/%d" \
                 % (len(samples), ok, len(samples))
+        return ok, len(samples)
 

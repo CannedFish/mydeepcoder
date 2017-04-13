@@ -63,13 +63,59 @@ Lambdas = {
     'MAX': [lambda x, y: x if x>y else y, (0, 0), 0, 4],
 }
 
-def initial_list(gcd, ordered):
-    gen_list = _gen_ordered_list() if ordered else _gen_list()
-    return [a*gcd for a in gen_list] if gcd != 1 else gen_list
+# Decorators
+def oddeven(func):
+    def wrapper(*args, **kwargs):
+        g_list = func(*args, **kwargs)
+        if kwargs['oddeven'] == 0:
+            return filter(lambda x: x%2==0, g_list)
+        elif kwargs['oddeven'] == 1:
+            return filter(lambda x: x%2==1, g_list)
+        else:
+            return g_list
+    return wrapper
+
+def reverse(func):
+    def wrapper(*args, **kwargs):
+        g_list = func(*args, **kwargs)
+        return FUNCs['FO']['REVERSE'][0](g_list) \
+                if kwargs['_reversed'] else g_list
+    return wrapper
+
+def gcd(func):
+    def wrapper(*args, **kwargs):
+        g_list = func(*args, **kwargs)
+        gcd = kwargs['gcd']
+        return [a*gcd for a in g_list] if gcd != 1 else g_list
+    return wrapper
+
+def sign(func):
+    def wrapper(*args, **kwargs):
+        g_list = func(*args, **kwargs)
+        if kwargs['sign'] == 1:
+            return [-n if n<0 else n for n in filter(lambda x: x!=0, g_list)]
+        elif kwargs['sign'] == -1:
+            return [-n if n>0 else n for n in filter(lambda x: x!=0, g_list)]
+        elif kwargs['sign'] == 0:
+            return [0]
+        else:
+            return g_list
+    return wrapper
+
+# API functions
+@gcd
+@reverse
+@oddeven
+@sign
+def initial_list(**kwargs):
+    ordered = kwargs['ordered']
+    return _gen_ordered_list() if ordered else _gen_list()
+    # return [a*gcd for a in gen_list] if gcd != 1 else gen_list
 
 def initial_int(gcd):
     return random.randint(-100, 100)*gcd
 
+# Implement functions
 def _gen_ordered_list(min_=None, max_=None, length=None):
     l = length-1 if length is not None \
             else random.randint(5, 10)
@@ -110,7 +156,7 @@ def _gen_list(min_=None, max_=None):
             if min_ is not None else high_end
     return gen_list
 
-def ReHEAD(n, gcd=1, ordered=False):
+def ReHEAD(n, gcd=1, ordered=False, **kwargs):
     gen_list = _gen_ordered_list(min_=n/gcd) \
             if ordered else _gen_list()
     if gcd != 1:
@@ -118,7 +164,7 @@ def ReHEAD(n, gcd=1, ordered=False):
     gen_list[0] = n
     return gen_list
 
-def ReLAST(n, gcd=1, ordered=False):
+def ReLAST(n, gcd=1, ordered=False, **kwargs):
     gen_list = _gen_ordered_list(max_=n/gcd) \
             if ordered else _gen_list()
     if gcd != 1:
@@ -126,22 +172,21 @@ def ReLAST(n, gcd=1, ordered=False):
     gen_list[-1] = n
     return gen_list
 
-def ReTAKE(v, gcd=1, ordered=False):
+def ReTAKE(v, gcd=1, ordered=False, **kwargs):
     gen_list = _gen_ordered_list(min_=v[-1]/gcd) \
             if ordered else _gen_list()
     if gcd != 1:
         gen_list = map(lambda x: x*gcd, gen_list)
     return len(v), v + gen_list[1:]
 
-def ReDROP(v, gcd=1, ordered=False):
+def ReDROP(v, gcd=1, ordered=False, **kwargs):
     gen_list = _gen_ordered_list(max_=v[0]/gcd) \
             if ordered else _gen_list()
     if gcd != 1:
         gen_list = map(lambda x: x*gcd, gen_list)
     return len(gen_list)-1, gen_list[:-1] + v
 
-def ReACCESS(n, gcd=1, ordered=False):
-    # TODO: some strange bug
+def ReACCESS(n, gcd=1, ordered=False, **kwargs):
     if ordered:
         gen_list1 = _gen_ordered_list(max_=n/gcd, \
                 length=random.randint(3, 5))
@@ -156,25 +201,28 @@ def ReACCESS(n, gcd=1, ordered=False):
     gen_list[idx] = n
     return idx, gen_list
 
-def ReMINIMUM(n, gcd=1, ordered=False):
+def ReMINIMUM(n, gcd=1, ordered=False, **kwargs):
     gen_list = _gen_ordered_list(min_=n/gcd) \
             if ordered else _gen_list(min_=n/gcd)
     if gcd != 1:
         gen_list = map(lambda x: x*gcd, gen_list)
     return gen_list
 
-def ReMAXIMUM(n, gcd=1, ordered=False):
+def ReMAXIMUM(n, gcd=1, ordered=False, **kwargs):
     gen_list = _gen_ordered_list(max_=n/gcd) \
             if ordered else _gen_list(max_=n/gcd)
     if gcd != 1:
         gen_list = map(lambda x: x*gcd, gen_list)
     return gen_list
 
-def ReSORT(v):
+def ReREVERSE(v, **kwargs):
+    return list(reversed(v))
+
+def ReSORT(v, **kwargs):
     random.shuffle(v)
     return v
 
-def ReSUM(n, gcd=1, ordered=False):
+def ReSUM(n, gcd=1, ordered=False, **kwargs):
     gen_list = []
     n /= gcd
     negative = False
@@ -241,7 +289,7 @@ def ReFilter_odd(v, gcd=1, ordered=False):
         random.shuffle(gen_list)
     return gen_list
 
-def ReFilter(f, v, gcd=1, ordered=False):
+def ReFilter(f, v, gcd=1, ordered=False, **kwargs):
     if f == '(>0)':
         return ReFilter_positive(v, gcd, ordered)
     elif f == '(<0)':
@@ -253,12 +301,12 @@ def ReFilter(f, v, gcd=1, ordered=False):
     else:
         raise ValueError('Bad lambda: %s', f)
 
-def ReMap(f, v):
+def ReMap(f, v, **kwargs):
     if Lambdas[f][2] == 2 or len(Lambdas[f][1]) > 1:
         raise ValueError('Bad lambda: %s', f)
     return map(ReLambdas[f], v)
 
-def ReCOUNT(f, n, gcd=1, ordered=False):
+def ReCOUNT(f, n, gcd=1, ordered=False, **kwargs):
     if f == '(>0)':
         gen_list = range(1, n+1)
         gen_list.extend([random.randint(-10, 0) for i in range(5)])
@@ -281,7 +329,7 @@ def ReCOUNT(f, n, gcd=1, ordered=False):
         random.shuffle(gen_list)
     return gen_list
 
-def ReZIPWITH(f, v, gcd=1):
+def ReZIPWITH(f, v, gcd=1, **kwargs):
     if len(Lambdas[f][1]) < 2:
         raise ValueError('Bad lambda: %s', f)
     gen_list1 = []
@@ -292,7 +340,7 @@ def ReZIPWITH(f, v, gcd=1):
         gen_list2.append(b)
     return gen_list1, gen_list2
 
-def ReSCANL1(f, v, gcd=1):
+def ReSCANL1(f, v, gcd=1, **kwargs):
     y = [v[-1]] * len(v)
     y[0] = v[0]
     if f == '(+)':
@@ -329,7 +377,7 @@ ReFUNCs = {
         'ACCESS': ReACCESS,
         'MINIMUM': ReMINIMUM,
         'MAXIMUM': ReMAXIMUM,
-        'REVERSE': lambda v: list(reversed(v)),
+        'REVERSE': ReREVERSE,
         'SORT': ReSORT,
         'SUM': ReSUM
     },

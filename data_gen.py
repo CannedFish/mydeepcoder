@@ -70,14 +70,17 @@ def main(length, f_path):
                     length)
     save(f_path)
     print "Prepare input-output for programs..."
+    no = 0
     for program in PROGRAMs:
-        print program.generate_func_in()
+        print 'No %d' % no
+        no += 1
+        print 'Samples: %s\n' % program.generate_func_in()
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage: python data_gen.py $Length[ $File $DEBUG]\n" +\
                 "Param $Length: the length of programe\n" +\
-                "Param $File: the path of file to save" +\
+                "Param $File: the path of file to save\n" +\
                 "Param $DEBUG: True or False\n"
         sys.exit(1)
 
