@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from dsl import FUNCs, Lambdas, ReFUNCs, ReLambdas, \
-        initial_list, initial_int, TYPE
+        initial_list, initial_int, key_of_attr, TYPE
 
 class Step(object):
     def __init__(self, step_func, step_lambda=None):
@@ -14,6 +14,7 @@ class Step(object):
         self._oddeven = None
         self._sign = None
         # TODO: sqrt 2?
+
         if step_lambda == None:
             self._func_type = 'FO'
             self._step_func = FUNCs['FO'][step_func]
@@ -48,6 +49,13 @@ class Step(object):
 
     def __str__(self):
         return "(%s, %s)" % (self._func, self._lambda)
+
+    @property
+    def funcs(self):
+        ret = [self._func]
+        if self._lambda is not None:
+            ret.append(self._lambda)
+        return ret
 
     def _type_check(self, var, tar_type):
         src_type = -1
@@ -149,6 +157,9 @@ class Program(object):
         self._samples = []
         # {'key2': [['key0', 'key1'], 'key2']}
         self._exec_flow = {}
+        # {'key': 0 or 1}
+        self._attr = {}
+        self._attr.fromkeys(key_of_attr(), 0)
         self._param_num = 0
 
     def __str__(self):
@@ -179,6 +190,8 @@ class Program(object):
         if type(step) != Step:
             raise TypeError('Should be an instance of Step, not %s', type(step))
         self._steps.append(step)
+        for func in step.funcs:
+            self._attr[func] = 1
         # Update the execution flow
         prev_res = None
         step_idx = len(self._steps)-1
@@ -343,4 +356,14 @@ class Program(object):
         print "%d samples tested, ok persent is %d/%d" \
                 % (len(samples), ok, len(samples))
         return ok, len(samples)
+
+    def export(self):
+        """
+        :return: (p, a, e)
+        p --> Program (steps)
+        a --> Attributes (attr)
+        e --> Examples (samples)
+        """
+        pass
+
 

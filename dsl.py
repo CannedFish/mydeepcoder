@@ -115,6 +115,13 @@ def initial_list(**kwargs):
 def initial_int(gcd):
     return random.randint(-100, 100)*gcd
 
+def key_of_attr():
+    keys = []
+    keys.extend(Lambdas.keys())
+    keys.extend(FUNCs['FO'].keys())
+    keys.extend(FUNCs['HO'].keys())
+    return keys
+
 # Implement functions
 def _gen_ordered_list(min_=None, max_=None, length=None):
     l = length-1 if length is not None \
