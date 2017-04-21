@@ -94,8 +94,12 @@ def encoder(x):
             biases['encoder_b3']))
     return layer_4
 
-def post_process():
-    pass
+def post_process(x):
+    """
+    :param x: 2-D tensor, shape is [number_of_samples, dim_of_encoder_output]
+    :return: vector, with hidden_width_2 dimension
+    """
+    return tf.reduce_mean(x, 0)
 
 def decoder(x):
     pass
