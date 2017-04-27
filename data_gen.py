@@ -74,6 +74,7 @@ def main(length, f_path):
     for program in PROGRAMs:
         print 'No %d' % no
         no += 1
+        # TODO: generate through forword direction
         print 'Samples: %s\n' % program.generate_func_in()
 
 if __name__ == '__main__':

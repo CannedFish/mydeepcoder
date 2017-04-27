@@ -5,13 +5,14 @@ import tensorflow as tf
 import numpy as np
 
 # nn's paramters
-type_length = 2
+sample_num = 5 # number of input-output samples for each program
+type_length = 2 # length of one-hot vector for input-output type
 array_length = 20 # NOTE: L in paper
 embedding_index = 513 # NOTE: [-256, 255] + None
 embedding_width = 20 # NOTE: E in paper
 hidden_width_1 = 2*(type_length+array_length*embedding_width)
-hidden_width_2 = 256
-output_width = 34
+hidden_width_2 = 256 # NOTE: K in paper
+output_width = 34 # NOTE: C in paper
 
 # training parameters
 learning_rate = 0.01
@@ -20,19 +21,19 @@ batch_size = 256
 display_step = 1
 examples_to_show = 10
 
-X = tf.placeholder('float', [None, input_width])
-
 weights = {
     # 'encoder_embedding': tf.Variable(tf.random_normal([array_length, embedding_width])),
     'encoder_h1': tf.Variable(tf.random_normal([hidden_width_1, hidden_width_2])),
     'encoder_h2': tf.Variable(tf.random_normal([hidden_width_2, hidden_width_2])),
-    'encoder_h3': tf.Variable(tf.random_normal([hidden_width_2, hidden_width_2]))
+    'encoder_h3': tf.Variable(tf.random_normal([hidden_width_2, hidden_width_2])),
+    'decoder': tf.Variable(tf.random_normal([hidden_width_2, output_width]))
 }
 
 biases = {
     'encoder_b1': tf.Variable(tf.random_normal([hidden_width_2])),
     'encoder_b2': tf.Variable(tf.random_normal([hidden_width_2])),
-    'encoder_b3': tf.Variable(tf.random_normal([hidden_width_2]))
+    'encoder_b3': tf.Variable(tf.random_normal([hidden_width_2])),
+    'decoder': tf.Variable(tf.random_normal([output_width]))
 }
 
 def prev_process(input_type, input_array, output_type, output_array):
@@ -67,7 +68,7 @@ def prev_process(input_type, input_array, output_type, output_array):
             raise TypeError('Must be an int, %s is given' % type(v))
         ret = [.0] * type_length
         ret[t] = 1.
-        return ret
+        return np.array(ret)
 
     i_type = type_to_one_hot(input_type)
     input_data = to_array(input_array, array_length)
@@ -102,5 +103,23 @@ def post_process(x):
     return tf.reduce_mean(x, 0)
 
 def decoder(x):
-    pass
+    return tf.sigmoid(tf.add(tf.matmul(x, weights['decoder']), \
+            biases['decoder']))
+
+def input_samples(input_file):
+    """A generator
+    """
+    with open(input_file, 'r') as fd:
+        samples = fd.readlines(batch_size)
+
+    yield []
+
+def main(input_file):
+    loss = tf. # cross entropy
+    optimizer = tf. # SGD
+
+    init = tf.global_variables_initializer()
+    with tf.Session() as sess:
+        sess.run(init)
+        total_batch = int(len(samples)/batch_size)
 
