@@ -3,6 +3,7 @@
 
 import tensorflow as tf
 import numpy as np
+import pickle
 
 # nn's paramters
 sample_num = 5 # number of input-output samples for each program
@@ -36,7 +37,7 @@ biases = {
     'decoder': tf.Variable(tf.random_normal([output_width]))
 }
 
-def prev_process(input_type, input_array, output_type, output_array):
+def _prev_process(input_type, input_array, output_type, output_array):
     """
     :param input_type: integer value, 0 --> int, 1 --> [int]
     :param input_array: integer or list based on input_type
@@ -82,7 +83,15 @@ def prev_process(input_type, input_array, output_type, output_array):
 
     return np.concatenate([i_type, inputs, o_type, outputs])
 
-def encoder(x):
+def prev_process(samples):
+    """
+    :param samples: 3-D python array, [batch_size, sample_num, hidden_width_1]
+    :return: 3-D Tensor, [batch_size, sample_num, hidden_width_1]
+    """
+    input_mat = np.array([[_prev_process(*s) for s in ss] for ss in samples])
+    return tf.reshape(input_mat, [batch_size, sample_num, hidden_width_1])
+
+def __encoder(x):
     """
     :param x: vector, with hidden_width_2 dimension
     :return: vector, with hidden_width_2 dimension
@@ -95,31 +104,75 @@ def encoder(x):
             biases['encoder_b3']))
     return layer_4
 
-def post_process(x):
+def _encoder(x):
     """
-    :param x: 2-D tensor, shape is [number_of_samples, dim_of_encoder_output]
-    :return: vector, with hidden_width_2 dimension
+    :param x: 2-D tensor, shape is [sample_num, hidden_width_1]
+    :return: 1-D tensor, shape is [hidden_width_2]
     """
-    return tf.reduce_mean(x, 0)
+    layer_5 = tf.map_fn(__encoder, x)
+    return tf.reduce_mean(layer_5, 0)
 
-def decoder(x):
+def encoder(x):
+    """
+    :param x: 3-D tensor, shape is [batch_size, sample_num, hidden_width_1]
+    :return: 2-D tensor, shape is [batch_size, hidden_width_2]
+    """
+    return tf.map_fn(_encoder, x)
+
+def _decoder(x):
     return tf.sigmoid(tf.add(tf.matmul(x, weights['decoder']), \
             biases['decoder']))
 
+def decoder(x):
+    """
+    :param x: 2-D tensor, shape is [batch_size, hidden_width_2]
+    :return: 2-D tensor, shape is [batch_size, output_width]
+    """
+    return tf.map_fn(_decoder, x)
+
 def input_samples(input_file):
     """A generator
+    :return: [batch_size, 5, 4], [batch_size]
     """
+    samples = {'x':[], 'y':[]}
     with open(input_file, 'r') as fd:
-        samples = fd.readlines(batch_size)
+        sample = pickle.loads(fd.readline())
+        samples['y'].append(sample[1])
+        samples['x'].append(sample[2])
+        samples.append(pickle.loads(fd.readline()))
+        if len(samples) == batch_size:
+            yield samples['x'], samples['y']
+            samples = {x:[], y:[]}
 
-    yield []
+    yield samples['x'], samples['y']
+
+X = tf.placeholder("float32", [batch_size, sample_num, hidden_width_1])
+Y = tf.placeholder("float32", [batch_size, output_type])
 
 def main(input_file):
-    loss = tf. # cross entropy
-    optimizer = tf. # SGD
+    # construct computing flow
+    encoder_op = encoder(X)
+    decoder_op = decoder(encoder_op)
+    
+    y_pred = decoder_op
+    y_true = Y
+    loss = tf.reduce_mean(-y_true * tf.log(y_pred) - (1-y_true) * tf.log(1-y_pred))
+    optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss)
 
     init = tf.global_variables_initializer()
     with tf.Session() as sess:
         sess.run(init)
-        total_batch = int(len(samples)/batch_size)
+
+        # train
+        for epoch in range(training_epochs):
+            for batch_x, batch_y in input_samples(input_file):
+                _, c = sess.run([optimizer, loss], feed_dict={\
+                        X: prev_process(batch_x), \
+                        Y: batch_y})
+            if epoch % display_step == 0:
+                print("Epoch:", "%04d" % (epoch+1), "cost=", "%.9f" % c)
+
+        print("Optimization Finished!")
+
+        # TODO: Test
 

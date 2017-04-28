@@ -362,8 +362,11 @@ class Program(object):
         :return: (p, a, e)
         p --> Program (steps)
         a --> Attributes (attr)
-        e --> Examples (samples)
+        e --> Examples (samples) [5, 4] (input_type, input, output_type, output)
         """
-        pass
+        samples = []
+        for s in self._samples:
+            if len(s[0].keys()) > 1:
+                # TODO: handle two more parameters
 
 
